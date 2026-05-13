@@ -3,43 +3,48 @@ import axios from 'axios';
 import TinderCard from 'react-tinder-card';
 import toast, { Toaster } from 'react-hot-toast';
 
+// Dostępne technologie – dopasowane do rzeczywistych tagów z API Remotive
+const DOSTEPNE_TECHNOLOGIE = [
+  'AWS',
+  'docker',
+  'git',
+  'api',
+  'CSS',
+  'backend',
+  'fullstack',
+  'go',
+  'android',
+  'ios',
+  'cloud',
+  'AI/ML',
+];
+
 function App() {
-  const [jobs, setJobs] = useState([]);
+  // ----------------------------------------------------------
+  // Stany
+  // ----------------------------------------------------------
+  const [jobs, setJobs] = useState([]);           // Oferty do wyświetlenia
   const [savedJobs, setSavedJobs] = useState(() => {
     const saved = localStorage.getItem('savedJobs');
     return saved ? JSON.parse(saved) : [];
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Indeks aktualnie wyświetlanej (wierzchniej) karty
-  const remainingJobs = useMemo(
-    () => jobs.slice().reverse(),
-    [jobs]
-  );
+  // Stan ekranu konfiguracji profilu
+  const [isProfileSet, setIsProfileSet] = useState(false);
+  const [selectedTechs, setSelectedTechs] = useState([]);
+  const [noResults, setNoResults] = useState(false); // Komunikat o braku ofert
 
-  // Referencje do kart – po jednej na każdą pozostałą ofertę
+  // ----------------------------------------------------------
+  // Memoizowane wartości
+  // ----------------------------------------------------------
+  const remainingJobs = useMemo(() => jobs.slice().reverse(), [jobs]);
+
   const childRefs = useMemo(
     () => remainingJobs.map(() => React.createRef()),
     [remainingJobs]
   );
-
-  // ----------------------------------------------------------
-  // Pobranie danych z API
-  // ----------------------------------------------------------
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const res = await axios.get('http://localhost:3000/api/oferty');
-        setJobs(res.data);
-      } catch (err) {
-        console.error('Błąd pobierania ofert:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchJobs();
-  }, []);
 
   // ----------------------------------------------------------
   // Synchronizacja savedJobs z localStorage
@@ -49,14 +54,51 @@ function App() {
   }, [savedJobs]);
 
   // ----------------------------------------------------------
+  // Obsługa kliknięcia checkboxa
+  // ----------------------------------------------------------
+  const handleCheckboxChange = (tech) => {
+    setSelectedTechs((prev) =>
+      prev.includes(tech) ? prev.filter((t) => t !== tech) : [...prev, tech]
+    );
+  };
+
+  // ----------------------------------------------------------
+  // Pobranie ofert po kliknięciu "Rozpocznij szukanie"
+  // ----------------------------------------------------------
+  const handleStartSearch = async () => {
+    if (selectedTechs.length === 0) return;
+
+    setIsLoading(true);
+    setNoResults(false);
+
+    try {
+      const techQuery = selectedTechs.join(',');
+      const res = await axios.get(
+        `http://localhost:3000/api/oferty?tech=${encodeURIComponent(techQuery)}`
+      );
+
+      if (res.data.length === 0) {
+        // Pusta tablica – brak ofert dla wybranych technologii
+        setNoResults(true);
+        setJobs([]);
+      } else {
+        setJobs(res.data);
+        setIsProfileSet(true);
+      }
+    } catch (err) {
+      console.error('Błąd pobierania ofert:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ----------------------------------------------------------
   // Handler swipe – wywoływany po puszczeniu karty
   // ----------------------------------------------------------
   const onSwipe = (direction, job) => {
     if (direction === 'right') {
-      // Dodajemy ofertę do zapisanych (stan + localStorage)
       setSavedJobs((prev) => [...prev, job]);
 
-      // Toast z klikalnym przyciskiem "Aplikuj teraz"
       toast(
         (t) => (
           <div className="flex items-center gap-3">
@@ -75,7 +117,6 @@ function App() {
         { duration: 5000 }
       );
     }
-    // Po przesunięciu usuwamy ofertę ze stosu
     setJobs((prev) => prev.filter((j) => j.id !== job.id));
   };
 
@@ -93,7 +134,82 @@ function App() {
   };
 
   // ----------------------------------------------------------
-  // Render
+  // Render – ekran konfiguracji profilu
+  // ----------------------------------------------------------
+  if (!isProfileSet) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
+        <Toaster position="top-center" toastOptions={{ style: { borderRadius: '12px', padding: '12px 16px' } }} />
+
+        <div className="w-full max-w-md rounded-2xl bg-slate-800/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm">
+          {/* Nagłówek */}
+          <h1 className="mb-2 text-center text-3xl font-extrabold text-white">
+            🔥 IT Tinder
+          </h1>
+          <p className="mb-8 text-center text-sm text-slate-400">
+            Konfiguracja profilu
+          </p>
+
+          {/* Lista checkboxów z technologiami */}
+          <div className="mb-6 space-y-3">
+            <p className="text-sm font-semibold text-slate-300">
+              Wybierz technologie, które Cię interesują:
+            </p>
+            {DOSTEPNE_TECHNOLOGIE.map((tech) => (
+              <label
+                key={tech}
+                className="flex cursor-pointer items-center gap-3 rounded-lg bg-slate-700/50 px-4 py-3 transition-colors hover:bg-slate-700"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedTechs.includes(tech)}
+                  onChange={() => handleCheckboxChange(tech)}
+                  className="h-5 w-5 rounded border-slate-500 bg-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                />
+                <span className="text-sm font-medium text-slate-200">{tech}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Komunikat o braku wyników */}
+          {noResults && (
+            <p className="mb-4 rounded-lg bg-amber-500/20 px-4 py-3 text-center text-sm font-medium text-amber-300">
+              Brak ofert dla wybranych technologii. Spróbuj innych.
+            </p>
+          )}
+
+          {/* Przycisk "Rozpocznij szukanie" */}
+          <button
+            onClick={handleStartSearch}
+            disabled={selectedTechs.length === 0 || isLoading}
+            className="w-full rounded-xl bg-blue-600 px-6 py-3 text-base font-bold text-white transition-all hover:bg-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Ładowanie...
+              </span>
+            ) : (
+              'Rozpocznij szukanie'
+            )}
+          </button>
+
+          {/* Podpowiedź, gdy nic nie wybrano */}
+          {selectedTechs.length === 0 && (
+            <p className="mt-3 text-center text-xs text-slate-500">
+              Zaznacz przynajmniej jedną technologię
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Render – główny widok z kartami (po konfiguracji)
   // ----------------------------------------------------------
   return (
     <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-10">
@@ -109,9 +225,7 @@ function App() {
 
       {/* Kontener stosu kart */}
       <div className="relative flex h-[420px] w-full max-w-sm items-center justify-center">
-        {isLoading ? (
-          <p className="text-lg font-medium text-slate-300 animate-pulse">Ładowanie ofert...</p>
-        ) : remainingJobs.length > 0 ? (
+        {remainingJobs.length > 0 ? (
           remainingJobs.map((job, index) => (
             <TinderCard
               key={job.id}

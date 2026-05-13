@@ -1,82 +1,58 @@
 const express = require("express");
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const PORT = 3000;
 
-// Middleware – pozwala frontendowi z localhost:5173 na swobodne pobieranie danych
+// Middleware
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 
-// Zmockowane oferty pracy IT
-const oferty = [
-  {
-    id: 1,
-    title: "Junior Frontend Developer",
-    company: "dupa Sp. z o.o.",
-    salary_min: 7000,
-    salary_max: 10000,
-    technologies: ["React", "TypeScript", "CSS"],
-    link: "https://example.com/offer/1",
-  },
-  {
-    id: 2,
-    title: "Mid Node.js Developer",
-    company: "BackendLab",
-    salary_min: 12000,
-    salary_max: 17000,
-    technologies: ["Node.js", "Express", "PostgreSQL", "Docker"],
-    link: "https://example.com/offer/2",
-  },
-  {
-    id: 3,
-    title: "Senior React Developer",
-    company: "Frontly",
-    salary_min: 17000,
-    salary_max: 24000,
-    technologies: ["React", "Next.js", "TypeScript", "GraphQL"],
-    link: "https://example.com/offer/3",
-  },
-  {
-    id: 4,
-    title: "Fullstack Developer (Node + React)",
-    company: "IT Solutions S.A.",
-    salary_min: 14000,
-    salary_max: 20000,
-    technologies: ["React", "Node.js", "MongoDB", "AWS"],
-    link: "https://example.com/offer/4",
-  },
-  {
-    id: 5,
-    title: "DevOps / Cloud Engineer",
-    company: "CloudNine",
-    salary_min: 18000,
-    salary_max: 26000,
-    technologies: ["AWS", "Terraform", "Kubernetes", "CI/CD"],
-    link: "https://example.com/offer/5",
-  },
-  {
-    id: 6,
-    title: "Python / AI Developer",
-    company: "DeepLogic",
-    salary_min: 16000,
-    salary_max: 23000,
-    technologies: ["Python", "PyTorch", "FastAPI", "PostgreSQL"],
-    link: "https://example.com/offer/6",
-  },
-];
+// GET /api/oferty – odczytuje oferty z pliku JSON i opcjonalnie filtruje po technologiach
+app.get("/api/oferty", (req, res) => {
+  const sciezkaPliku = path.join(__dirname, "oferty.json");
+  const paramTech = req.query.tech; // np. "javascript,react"
 
-// GET /api/oferty – zwraca listę zmockowanych ofert
-app.get("/api/oferty", (_req, res) => {
-  try {
-    res.json(oferty);
-  } catch (error) {
-    console.error("Błąd podczas pobierania ofert:", error);
-    res.status(500).json({ error: "Nie udało się pobrać ofert." });
-  }
+  fs.readFile(sciezkaPliku, "utf-8", (err, data) => {
+    // Błąd odczytu pliku (np. plik nie istnieje)
+    if (err) {
+      console.error("Błąd odczytu pliku:", err);
+      return res.status(500).json({ error: "Nie udało się odczytać pliku z ofertami." });
+    }
+
+    // Parsowanie JSON – obsługa uszkodzonego formatu
+    try {
+      let oferty = JSON.parse(data);
+
+      // Filtrowanie po technologiach, jeśli podano parametr ?tech=
+      if (paramTech && paramTech.trim() !== "") {
+        const wybraneTech = paramTech
+          .split(",")
+          .map((t) => t.trim().toLowerCase())
+          .filter((t) => t !== "");
+
+        if (wybraneTech.length > 0) {
+          oferty = oferty.filter((oferta) => {
+            const tagi = (oferta.technologies || []).map((tag) =>
+              tag.toLowerCase()
+            );
+            // Zwróć ofertę, jeśli chociaż jeden tag pasuje do wybranej technologii
+            return wybraneTech.some((tech) => tagi.includes(tech));
+          });
+        }
+      }
+
+      res.json(oferty);
+    } catch (parseError) {
+      console.error("Błąd parsowania JSON:", parseError);
+      return res.status(500).json({ error: "Plik z ofertami ma nieprawidłowy format JSON." });
+    }
+  });
 });
 
 // Start serwera
 app.listen(PORT, () => {
-  console.log(`✅ Serwer działa na porcie ${PORT} – http://localhost:${PORT}`);
+  console.log(`Serwer działa na porcie ${PORT} – http://localhost:${PORT}`);
 });
