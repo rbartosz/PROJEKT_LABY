@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import TinderCard from 'react-tinder-card';
 import toast, { Toaster } from 'react-hot-toast';
+import Login from './Login';
+import Register from './Register';
+import AdminPanel from './AdminPanel';
 
 // Dostępne technologie – dopasowane do rzeczywistych tagów z API Remotive
 const DOSTEPNE_TECHNOLOGIE = [
@@ -20,6 +23,16 @@ const DOSTEPNE_TECHNOLOGIE = [
 ];
 
 function App() {
+  // ----------------------------------------------------------
+  // Stany – autentykacja
+  // ----------------------------------------------------------
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [authView, setAuthView] = useState('login'); // 'login' | 'register'
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  // Dekodowanie roli z JWT
+  const userRole = token ? JSON.parse(atob(token.split('.')[1])).role : null;
+
   // ----------------------------------------------------------
   // Stany
   // ----------------------------------------------------------
@@ -54,6 +67,19 @@ function App() {
   }, [savedJobs]);
 
   // ----------------------------------------------------------
+  // Autentykacja – handlery
+  // ----------------------------------------------------------
+  const handleLogin = (newToken) => {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+  };
+
+  // ----------------------------------------------------------
   // Obsługa kliknięcia checkboxa
   // ----------------------------------------------------------
   const handleCheckboxChange = (tech) => {
@@ -74,7 +100,8 @@ function App() {
     try {
       const techQuery = selectedTechs.join(',');
       const res = await axios.get(
-        `http://localhost:3000/api/oferty?tech=${encodeURIComponent(techQuery)}`
+        `http://localhost:3000/api/oferty?tech=${encodeURIComponent(techQuery)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (res.data.length === 0) {
@@ -146,6 +173,19 @@ function App() {
     });
     return `${formatter.format(min)} – ${formatter.format(max)}`;
   };
+
+  // ----------------------------------------------------------
+  // Render – ekran logowania/rejestracji (brak tokena)
+  // ----------------------------------------------------------
+  if (!token) {
+    return authView === 'login'
+      ? <Login onLogin={handleLogin} onSwitch={() => setAuthView('register')} />
+      : <Register onSwitch={() => setAuthView('login')} />;
+  }
+
+  if (showAdmin && userRole === 'admin') {
+    return <AdminPanel token={token} onBack={() => setShowAdmin(false)} />;
+  }
 
   // ----------------------------------------------------------
   // Render – ekran konfiguracji profilu
@@ -226,7 +266,7 @@ function App() {
   // Render – główny widok z kartami (po konfiguracji)
   // ----------------------------------------------------------
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-10">
+    <div className="relative flex min-h-screen flex-col items-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-10">
       <Toaster position="top-center" toastOptions={{ style: { borderRadius: '12px', padding: '12px 16px' } }} />
 
       {/* Nagłówek */}
@@ -236,6 +276,20 @@ function App() {
       <p className="mb-10 text-sm text-slate-400">
         Przesuń w prawo, aby zapisać · Przesuń w lewo, aby pominąć
       </p>
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-600"
+      >
+        Wyloguj
+      </button>
+      {userRole === 'admin' && (
+        <button
+          onClick={() => setShowAdmin(true)}
+          className="absolute top-4 right-24 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-500"
+        >
+          🛡️ Admin
+        </button>
+      )}
 
       {/* Kontener stosu kart */}
       <div className="relative flex h-[420px] w-full max-w-sm items-center justify-center">
