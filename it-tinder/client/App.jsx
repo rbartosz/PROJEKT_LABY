@@ -121,6 +121,20 @@ function App() {
   };
 
   // ----------------------------------------------------------
+  // Usuwanie pojedynczej zapisanej oferty
+  // ----------------------------------------------------------
+  const handleDeleteOne = (jobId) => {
+    setSavedJobs((prev) => prev.filter((j) => j.id !== jobId));
+  };
+
+  // ----------------------------------------------------------
+  // Usuwanie wszystkich zapisanych ofert
+  // ----------------------------------------------------------
+  const handleDeleteAll = () => {
+    setSavedJobs([]);
+  };
+
+  // ----------------------------------------------------------
   // Pomocnik formatujący widełki płacowe
   // ----------------------------------------------------------
   const formatSalary = (min, max) => {
@@ -300,12 +314,23 @@ function App() {
             {/* Nagłówek modala */}
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">Twoje ulubione oferty</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Przycisk usuwania wszystkich */}
+                {savedJobs.length > 0 && (
+                  <button
+                    onClick={handleDeleteAll}
+                    className="rounded-lg bg-red-600/20 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-600/40 hover:text-red-300"
+                  >
+                    Usuń wszystkie
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Lista zapisanych ofert */}
@@ -323,14 +348,24 @@ function App() {
                         {formatSalary(job.salary_min, job.salary_max)}
                       </p>
                     </div>
-                    <a
-                      href={job.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-lg bg-blue-500 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-600"
-                    >
-                      Aplikuj
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={job.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg bg-blue-500 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-600"
+                      >
+                        Aplikuj
+                      </a>
+                      {/* Przycisk usuwania pojedynczej oferty */}
+                      <button
+                        onClick={() => handleDeleteOne(job.id)}
+                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-600/30 hover:text-red-400"
+                        title="Usuń ofertę"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
