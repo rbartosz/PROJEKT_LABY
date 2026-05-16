@@ -29,33 +29,28 @@ export default function AdminPanel({ token, onBack }) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-10">
-      <div className="w-full max-w-lg">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">🛡️ Panel Admina</h1>
-          <button onClick={onBack} className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-600">
-            ← Wróć do aplikacji
-          </button>
+    <div className="page-top">
+      <div className="admin-container">
+        <div className="admin-header">
+          <h1 className="admin-title">🛡️ Panel Admina</h1>
+          <button onClick={onBack} className="btn-secondary">← Wróć do aplikacji</button>
         </div>
 
-        {error && <p className="mb-4 rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-300">{error}</p>}
+        {error && <p className="alert-error">{error}</p>}
 
-        <div className="rounded-xl bg-slate-800/80 p-4 shadow-xl">
-          <h2 className="mb-4 text-sm font-semibold text-slate-300">Użytkownicy ({users.length})</h2>
-          <div className="space-y-2">
+        <div className="admin-card">
+          <h2 className="admin-card__label">Użytkownicy ({users.length})</h2>
+          <div className="user-list">
             {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between rounded-lg bg-slate-700/50 px-4 py-3">
+              <div key={u.id} className="user-item">
                 <div>
-                  <span className="text-sm text-white">{u.email}</span>
-                  <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${u.role === 'admin' ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/20 text-blue-300'}`}>
+                  <span className="user-item__email">{u.email}</span>
+                  <span className={`user-item__role ${u.role === 'admin' ? 'role-admin' : 'role-user'}`}>
                     {u.role}
                   </span>
                 </div>
                 {u.role !== 'admin' && (
-                  <button
-                    onClick={() => handleDelete(u.id, u.email)}
-                    className="rounded-lg px-3 py-1 text-xs font-medium text-red-400 hover:bg-red-600/20"
-                  >
+                  <button onClick={() => handleDelete(u.id, u.email)} className="btn-delete">
                     Usuń
                   </button>
                 )}

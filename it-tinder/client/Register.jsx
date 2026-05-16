@@ -24,26 +24,22 @@ export default function Register({ onSwitch }) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-slate-800/80 p-8 shadow-2xl backdrop-blur-sm">
-        <h1 className="mb-2 text-center text-3xl font-extrabold text-white">🔥 IT Tinder</h1>
-        <p className="mb-6 text-center text-sm text-slate-400">Rejestracja</p>
+    <div className="page-center">
+      <div className="card card--sm">
+        <h1 className="title">🔥 IT Tinder</h1>
+        <p className="subtitle">Rejestracja</p>
 
-        {error && (
-          <p className="mb-4 rounded-lg bg-red-500/20 px-4 py-2 text-center text-sm text-red-300">{error}</p>
-        )}
-        {success && (
-          <p className="mb-4 rounded-lg bg-green-500/20 px-4 py-2 text-center text-sm text-green-300">{success}</p>
-        )}
+        {error && <p className="alert-error">{error}</p>}
+        {success && <p className="alert-success">{success}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="form-stack">
           <input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-lg bg-slate-700 px-4 py-3 text-sm text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+            className="input"
           />
           <input
             type="password"
@@ -51,22 +47,16 @@ export default function Register({ onSwitch }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded-lg bg-slate-700 px-4 py-3 text-sm text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+            className="input"
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-all hover:bg-blue-500 disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className="btn-primary">
             {loading ? 'Rejestracja...' : 'Zarejestruj się'}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="hint-bottom">
           Masz już konto?{' '}
-          <button onClick={onSwitch} className="text-blue-400 hover:underline">
-            Zaloguj się
-          </button>
+          <button onClick={onSwitch} className="link-switch">Zaloguj się</button>
         </p>
       </div>
     </div>
